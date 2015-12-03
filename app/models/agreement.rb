@@ -17,6 +17,7 @@ class Agreement < ActiveRecord::Base
   def create_github_repo_hook
     hook_inputs = {
       'name' => 'web',
+      'events' => ['push', 'pull_request'],
       'config' => {
         'url' => "#{HOST}/repo_hook"
       }
@@ -32,6 +33,12 @@ class Agreement < ActiveRecord::Base
       GithubRepos.new(self.user).delete_hook(user_name, repo_name, github_repo_hook_id)
       self.update_attribute(:github_repo_hook_id, nil)
     end
+  end
+
+  def destroy_including_signatures_and_hook
+    self.signatures.each(&:destroy)
+    self.delete_github_repo_hook
+    self.destroy
   end
 
   def owned_by?(candidate)

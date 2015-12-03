@@ -20,7 +20,7 @@ feature "Agreeing to a CLA" do
   end
 
   scenario "Allow a user to sign in with GitHub and agree to a CLA" do
-    mock_github_oauth(info: { nickname: 'jasonm' })
+    mock_github_limited_oauth(info: { nickname: 'jasonm' })
     visit '/agreements/the_owner/the_project'
     click_link 'Sign in with GitHub to agree to this CLA'
 
@@ -42,7 +42,7 @@ feature "Agreeing to a CLA" do
     agreement.build_default_fields
     agreement.save
 
-    mock_github_oauth(info: { nickname: 'jasonm' })
+    mock_github_limited_oauth(info: { nickname: 'jasonm' })
     visit '/agreements/the_owner/the_project'
     click_link 'Sign in with GitHub to agree to this CLA'
 
@@ -63,7 +63,7 @@ feature "Agreeing to a CLA" do
   end
 
   scenario "Do not allow me to agree twice" do
-    mock_github_oauth(info: { nickname: 'jasonm' })
+    mock_github_limited_oauth(info: { nickname: 'jasonm' })
     visit '/agreements/the_owner/the_project'
     click_link 'Sign in with GitHub to agree to this CLA'
 
@@ -129,21 +129,22 @@ feature "Agreeing to a CLA" do
     expect_commit_status_to_be_set('the_owner', 'alpha', 'bbb222', 'success')
     expect_commit_status_to_be_set('the_owner', 'alpha', 'ccc333', 'failure')
     expect_commit_status_to_be_set('the_owner', 'beta',  'ddd444', 'failure')
-    expect_commit_status_to_be_set('the_owner', 'beta',  'eee555', 'failure')
+    expect_commit_status_to_be_set('the_owner', 'beta',  'eee555', 'ancestor_failure')
 
-    sign_agreement('the_owner', 'beta', 'caterina_committer')
-    expect_commit_status_to_be_set('the_owner', 'beta',  'eee555', 'success')
+    sign_agreement('the_owner', 'beta', 'nancy_no_signature')
+    expect_commit_status_to_be_set('the_owner', 'beta',  'ddd444', 'success')
+    expect_commit_status_to_be_set('the_owner', 'beta',  'eee555', 'failure')
   end
 
-  def expect_commit_status_to_be_set(user_name, repo_name, sha, status)
+  def expect_commit_status_to_be_set(user_name, repo_name, sha, status_name)
     raise "no agreement made for repo" unless agreement = Agreement.find_by_user_name_and_repo_name(user_name, repo_name)
     raise "no oauth token for creator" unless oauth_token = agreement.user.oauth_token
 
     status_url = "https://api.github.com/repos/#{user_name}/#{repo_name}/statuses/#{sha}?access_token=#{oauth_token}"
     status_params = {
-      state: status,
+      state: CommitGroup::STATUS_TYPES[status_name]['state'],
       target_url: "#{HOST}/agreements/#{user_name}/#{repo_name}",
-      description: PushStatusChecker::STATUS_DESCRIPTIONS[status],
+      description: CommitGroup::STATUS_TYPES[status_name]['description'],
       context: "clahub"
     }
 
@@ -156,7 +157,7 @@ feature "Agreeing to a CLA" do
     end
 
     github_uid ||= github_uid_for_nickname(contributor_nickname)
-    mock_github_oauth(info: { nickname: contributor_nickname }, uid: github_uid)
+    mock_github_limited_oauth(info: { nickname: contributor_nickname }, uid: github_uid)
 
     visit '/sign_out'
     visit "/agreements/#{repo_owner}/#{repo_name}"

@@ -1,8 +1,8 @@
 source 'https://rubygems.org'
 
-ruby "2.1.1" # make sure .ruby-version agrees
+ruby "2.1.4" # make sure .ruby-version agrees
 
-gem 'rails', '3.2.16'
+gem 'rails', '3.2.19'
 
 gem 'pg'
 gem 'jquery-rails'
@@ -19,14 +19,15 @@ gem 'paul_revere'
 gem 'kramdown'
 gem 'newrelic_rpm'
 gem 'rack-ssl-enforcer'
+gem 'dotenv-rails'
 
 group :development do
-  gem 'localtunnel'
   gem 'pry'
   gem 'pry-rails'
   # gem 'pry-debugger'
   gem 'pry-remote'
   gem 'debugger-linecache', '1.2.0'
+  gem 'httplog'
 end
 
 group :test do
@@ -42,7 +43,6 @@ end
 group :test, :development do
   gem 'rspec-rails', '~> 2.0'
   gem 'simplecov', require: false
-  gem 'dotenv'
   gem 'guard-livereload'
 end
 
